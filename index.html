@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Daily Cost Planner — AL v2.0</title>
+  <meta name="description" content="Dnevni i tjedni plan troškova: jelovnik, shopping lista, custom cijene, PDF i offline AI chat." />
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Daily Planner">
+  <meta name="theme-color" content="#111319"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <style>
+    :root { --bg:#0f1115; --card:#181b24; --text:#e9ecf1; --muted:#a7adbb; --accent:#4de1c9; --border:#242838; --button:#1f2330; }
+    @media (prefers-color-scheme: light) { :root { --bg:#f6f7f9; --card:#ffffff; --text:#12141a; --muted:#5a6072; --accent:#0fb9a8; --border:#e8ebf2; --button:#eef1f7; } }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(900px 600px at 85% -120px, rgba(77,225,201,.10), transparent 60%), var(--bg); color:var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;}
+    .app{max-width: 980px; margin: 0 auto; padding: 18px;}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{width:36px;height:36px;border-radius:12px;background:var(--card);display:grid;place-items:center;border:1px solid var(--border);font-weight:800}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border:1px solid var(--border);background:var(--button);border-radius:999px;cursor:pointer;font-weight:600}
+    .tab.active{outline:2px solid var(--accent)}
+    .grid{display:grid;gap:14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px}
+    h1{font-size:20px;margin:0}
+    .row{display:grid;grid-template-columns:1fr 1fr; gap:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input, select, textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--bg); color:var(--text); font:inherit}
+    button{border:1px solid var(--border);background:var(--button);color:var(--text);padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600}
+    button:hover{filter:brightness(1.05)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .list{display:grid;gap:8px;margin-top:8px}
+    .item{display:flex;justify-content:space-between;align-items:center;border:1px dashed var(--border);border-radius:12px;padding:10px}
+    .pill{border:1px dashed var(--border);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px}
+    .total{font-weight:800}
+    .muted{color:var(--muted);font-size:13px}
+    .divider{height:1px;background:var(--border);margin:12px 0}
+    .success{border:1px solid rgba(77,225,201,.5);background:rgba(77,225,201,.08);border-radius:12px;padding:10px}
+    footer{color:var(--muted);font-size:12px;text-align:center;margin:8px 0}
+    .warning{border:1px solid rgba(255, 199, 0, .5); background: rgba(255, 199, 0, .08); border-radius: 10px; padding: 8px;}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .chat{display:grid;gap:8px;max-height:300px;overflow:auto;padding:8px;border-radius:12px;border:1px dashed var(--border);background:rgba(0,0,0,.03)}
+    .bubble{padding:10px;border-radius:10px;max-width:80%}
+    .me{justify-self:end;background:rgba(77,225,201,.1);border:1px solid rgba(77,225,201,.4)}
+    .ai{justify-self:start;background:rgba(255,255,255,.06);border:1px solid var(--border)}
+    @media print {
+      body{background:white;color:black}
+      .tab, #installBtn{display:none}
+      .card{border:1px solid #ccc}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">DC</div>
+        <div>
+          <h1>Daily Cost Planner — AL v2.0</h1>
+          <div class="muted">Dnevni i tjedni plan + shopping lista + custom cijene + PDF + offline chat</div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="daily">Dan</button>
+        <button class="tab" data-tab="weekly">Tjedan</button>
+        <button class="tab" data-tab="prices">Cijene</button>
+        <button class="tab" data-tab="chat">AI chat</button>
+        <a id="installBtn" class="pill" hidden>Instaliraj</a>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card" id="daily">
+        <div class="row">
+          <div>
+            <label>Dnevni budžet (€)</label>
+            <input id="budget" type="number" min="0" step="0.01" placeholder="npr. 15" />
+          </div>
+          <div>
+            <label>Broj osoba</label>
+            <select id="people">
+              <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Prehrana</label>
+            <select id="diet">
+              <option value="omnivore" selected>Omnivore</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option>
+            </select>
+          </div>
+          <div>
+            <label>Alergeni / izbjegni</label>
+            <input id="avoid" placeholder="npr. orašasti plodovi, gluten" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Što imaš u kući (pantry)</label>
+            <input id="pantry" placeholder="npr. riža, tjestenina, jaja" />
+          </div>
+          <div>
+            <label>Aktivnost dana</label>
+            <select id="activity">
+              <option value="low" selected>Miran dan</option><option value="medium">Umjereno</option><option value="high">Vrlo aktivno</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="planBtn">Napravi dnevni plan</button>
+          <button id="regenBtn">Regeneriraj jelovnik</button>
+          <button id="saveBtn">Spremi dan</button>
+          <button id="printBtn">PDF (Print)</button>
+          <button id="resetBtn">Reset</button>
+        </div>
+        <div id="notice" class="warning" style="display:none; margin-top:8px;"></div>
+
+        <div class="two-col" style="margin-top:12px;">
+          <div>
+            <h3 style="margin:0 0 6px 0;">Dnevni jelovnik i troškovi</h3>
+            <div id="menu" class="list"></div>
+            <div class="divider"></div>
+            <div id="essentials" class="list"></div>
+            <div class="divider"></div>
+            <div id="summary" class="success"></div>
+          </div>
+          <div>
+            <h3 style="margin:0 0 6px 0;">Shopping lista (danas)</h3>
+            <div id="shopping" class="list"></div>
+            <div class="divider"></div>
+            <h3 style="margin:0 0 6px 0;">Savjeti (AL)</h3>
+            <div id="tips" class="list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="weekly" style="display:none;">
+        <div class="actions">
+          <button id="planWeekBtn">Generiraj tjedan</button>
+          <button id="printWeekBtn">PDF (Print tjedan)</button>
+        </div>
+        <div id="weekContainer" class="list"></div>
+        <div class="divider"></div>
+        <h3 style="margin:0 0 6px 0;">Shopping lista (tjedan)</h3>
+        <div id="weekShopping" class="list"></div>
+        <div class="divider"></div>
+        <div id="weekSummary" class="success"></div>
+      </section>
+
+      <section class="card" id="prices" style="display:none;">
+        <h3 style="margin:0 0 6px 0;">Uredi cijene (po jedinici)</h3>
+        <div class="list" id="priceEditor"></div>
+        <div class="actions"><button id="savePrices">Spremi cijene</button><span class="muted">Savjet: unesi cijene iz tvog dućana radi točnosti.</span></div>
+      </section>
+
+      <section class="card" id="chat" style="display:none;">
+        <div class="chat" id="chatBox"></div>
+        <div class="row" style="margin-top:8px;">
+          <input id="chatInput" placeholder="Napiši: Nemam jaja, što umjesto toga?" />
+          <button id="chatSend">Pošalji</button>
+        </div>
+        <div class="muted" style="margin-top:6px;">Offline mini-AI: pravila + lokalni podaci (bez interneta).</div>
+      </section>
+
+      <footer>Radi offline. Podaci ostaju na tvom uređaju (LocalStorage). Za PDF koristi gumb “Print”, pa “Save as PDF”.</footer>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
